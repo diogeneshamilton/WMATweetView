@@ -117,6 +117,7 @@
 typedef void (^URLEntityTappedCallbackBlock)(WMATweetURLEntity *entity, NSUInteger numberOfTouches);
 typedef void (^HashtagEntityTappedCallbackBlock)(WMATweetHashtagEntity *entity, NSUInteger numberOfTouches);
 typedef void (^UserMentionEntityTappedCallbackBlock)(WMATweetUserMentionEntity *entity, NSUInteger numberOfTouches);
+typedef void (^TextTappedCallbackBlock)(WMATweetView *tweetView);
 @property (nonatomic, SAFE_ARC_PROP_RETAIN) NSString *text;
 @property (nonatomic, SAFE_ARC_PROP_RETAIN) NSArray *entities;
 @property (nonatomic, SAFE_ARC_PROP_RETAIN) UIColor *textColor;
@@ -127,9 +128,13 @@ typedef void (^UserMentionEntityTappedCallbackBlock)(WMATweetUserMentionEntity *
 @property (nonatomic, SAFE_ARC_PROP_RETAIN) UIFont *hashtagFont;
 @property (nonatomic, SAFE_ARC_PROP_RETAIN) UIColor *userMentionColor;
 @property (nonatomic, SAFE_ARC_PROP_RETAIN) UIFont *userMentionFont;
+@property (nonatomic, SAFE_ARC_PROP_RETAIN) UITableViewController *tableViewController;
+@property (nonatomic, SAFE_ARC_PROP_RETAIN) UITableViewCell *cell;
 @property (nonatomic, copy) URLEntityTappedCallbackBlock urlTapped;
 @property (nonatomic, copy) HashtagEntityTappedCallbackBlock hashtagTapped;
 @property (nonatomic, copy) UserMentionEntityTappedCallbackBlock userMentionTapped;
+@property (nonatomic, copy) TextTappedCallbackBlock textTapped;
 - (id)initWithTweet:(NSDictionary *)tweet frame:(CGRect)frame;
 - (id)initWithText:(NSString *)text frame:(CGRect)frame;
+- (void)setDictionary:(NSDictionary *)tweet;
 @end
