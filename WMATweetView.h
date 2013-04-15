@@ -117,6 +117,7 @@
 typedef void (^URLEntityTappedCallbackBlock)(WMATweetURLEntity *entity, NSUInteger numberOfTouches);
 typedef void (^HashtagEntityTappedCallbackBlock)(WMATweetHashtagEntity *entity, NSUInteger numberOfTouches);
 typedef void (^UserMentionEntityTappedCallbackBlock)(WMATweetUserMentionEntity *entity, NSUInteger numberOfTouches);
+typedef void (^TextTapStartCallbackBlock)(WMATweetView *tweetView);
 typedef void (^TextTappedCallbackBlock)(WMATweetView *tweetView);
 @property (nonatomic, SAFE_ARC_PROP_RETAIN) NSString *text;
 @property (nonatomic, SAFE_ARC_PROP_RETAIN) NSArray *entities;
@@ -133,6 +134,7 @@ typedef void (^TextTappedCallbackBlock)(WMATweetView *tweetView);
 @property (nonatomic, copy) URLEntityTappedCallbackBlock urlTapped;
 @property (nonatomic, copy) HashtagEntityTappedCallbackBlock hashtagTapped;
 @property (nonatomic, copy) UserMentionEntityTappedCallbackBlock userMentionTapped;
+@property (nonatomic, copy) TextTapStartCallbackBlock textTapStart;
 @property (nonatomic, copy) TextTappedCallbackBlock textTapped;
 - (id)initWithTweet:(NSDictionary *)tweet frame:(CGRect)frame;
 - (id)initWithText:(NSString *)text frame:(CGRect)frame;

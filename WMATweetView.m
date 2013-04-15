@@ -142,11 +142,15 @@
 	SAFE_ARC_SUPER_DEALLOC();
 }
 
-
-
 #pragma mark Accessors
 
 - (void)setDictionary:(NSDictionary *)tweet {
+    
+    BOOL retweet = NO;
+    if ([tweet valueForKey:@"retweeted_status"]) {
+        retweet = YES;
+        tweet = [tweet valueForKey:@"retweeted_status"];
+    }
     
     self.text = [tweet valueForKey:@"text"];
     
@@ -396,13 +400,12 @@
 						}
 						found = YES;
 						break;
-					} else if (self.textTapped != NULL){
-                        self.textTapped(self);
-                    }
+					}
 				}
 			}
 			if (found) break;
 		}
+        if (!found) self.textTapped(self);
 		CFRelease(path);
 		CFRelease(frame);
 	}	
@@ -732,4 +735,3 @@
 }
 
 @end
-
