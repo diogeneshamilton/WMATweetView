@@ -24,6 +24,7 @@
 
 #import "WMATweetView.h"
 #import <CoreText/CoreText.h>
+#import "NSString+Enhancements.h"
 
 @interface WMATweetView () <UIGestureRecognizerDelegate>
 {
@@ -159,6 +160,7 @@
     NSMutableArray *amps = [NSMutableArray array];
     NSRange searchRange = NSMakeRange(0, [str length]);
     NSRange range;
+    
     while ((range = [str rangeOfString:searchString options:0 range:searchRange]).location != NSNotFound) {
         
         NSNumber *start = [NSNumber numberWithInteger:range.location];
@@ -441,6 +443,7 @@
 	{
 		NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:self.text];
         
+        
 		// We're replacing text in entities, so we need to recalculate ranges
 		if (self.sortedEntities == nil)
 		{
@@ -455,11 +458,12 @@
 														 }];
 		}
 		NSInteger rangeStartOffset = 0;
-		
+
 		// Parse entities
 		for (WMATweetEntity *entity in sortedEntities)
 		{
 			NSRange range = NSMakeRange(entity.start + rangeStartOffset, (entity.end - entity.start));
+            range = [[attributedString string] composedRangeWithRange:range];
 			if ([entity isKindOfClass:[WMATweetURLEntity class]])
 			{
 				WMATweetURLEntity *urlEntity = (WMATweetURLEntity *)entity;
@@ -510,6 +514,7 @@
 		for (WMATweetEntity *entity in sortedEntities)
 		{
 			NSRange range = NSMakeRange(entity.startWithOffset, (entity.endWithOffset - entity.startWithOffset));
+            range = [[attributedString string] composedRangeWithRange:range];
 			[attributedString addAttribute:@"TweetEntity" value:entity range:range];
 			UIColor *entityColor = nil;
 			CTFontRef entityFont = NULL;
