@@ -407,7 +407,7 @@
 			}
 			if (found) break;
 		}
-        if (!found) self.textTapped(self);
+        if (!found && self.textTapped != NULL) self.textTapped(self);
 		CFRelease(path);
 		CFRelease(frame);
 	}	
