@@ -25,6 +25,7 @@
 #import "WMATweetView.h"
 #import <CoreText/CoreText.h>
 #import "NSString+Enhancements.h"
+#import "WMARecognizer.h"
 
 @interface WMATweetView () <UIGestureRecognizerDelegate>
 {
@@ -33,7 +34,6 @@
 	CTFontRef _hashtagFontRef;
 	CTFontRef _userMentionFontRef;
 }
-@property (nonatomic, SAFE_ARC_PROP_RETAIN) NSMutableAttributedString *attributedString;
 @property (nonatomic, SAFE_ARC_PROP_RETAIN) NSArray *sortedEntities;
 @property (nonatomic, assign) CTFramesetterRef framesetter;
 - (void)setupDefaults;
@@ -41,10 +41,6 @@
 @end
 
 @interface WMATweetEntity ()
-@property (nonatomic, assign) NSUInteger start;
-@property (nonatomic, assign) NSUInteger end;
-@property (nonatomic, assign) NSUInteger startWithOffset;
-@property (nonatomic, assign) NSUInteger endWithOffset;
 - (id)initWithStart:(NSUInteger)start end:(NSUInteger)end;
 @end
 
@@ -140,6 +136,9 @@
 	SAFE_ARC_RELEASE(_userMentionTapped);
     SAFE_ARC_RELEASE(_tableViewController);
     SAFE_ARC_RELEASE(_cell);
+    [[NSNotificationCenter defaultCenter] removeObserver:self
+                                                    name:@"CancelWMATap"
+                                                  object:nil];
 	SAFE_ARC_SUPER_DEALLOC();
 }
 
@@ -347,16 +346,11 @@
 	}
 }
 
-
-
 #pragma mark UITapGestureRecognizer
 
-- (void)viewTapped:(UITapGestureRecognizer *)tapRecognizer
+- (void)viewTapped:(WMARecognizer *)tapRecognizer
 {
-	if (tapRecognizer.state != UIGestureRecognizerStateEnded)
-	{
-		return;
-	}
+    
 	CGPoint point = [tapRecognizer locationInView:self];
 	
 	if (CGRectContainsPoint(self.bounds, point))
@@ -388,17 +382,24 @@
 					WMATweetEntity *entity = [attributes objectForKey:@"TweetEntity"];
 					if (entity != nil && entity.startWithOffset <= lineCharIndex && entity.endWithOffset >= lineCharIndex)
 					{
+                        if (tapRecognizer.state != UIGestureRecognizerStateEnded)
+                        {
+                            if (tapRecognizer.state == UIGestureRecognizerStateBegan) {
+                                self.entityTapped(self, entity, point);
+                            }
+                            return;
+                        }
 						if ([entity isKindOfClass:[WMATweetURLEntity class]] && self.urlTapped != NULL)
 						{
-							self.urlTapped((WMATweetURLEntity *)entity, tapRecognizer.numberOfTouches);
+							self.urlTapped(self, (WMATweetURLEntity *)entity, tapRecognizer.numberOfTouches);
 						}
 						else if ([entity isKindOfClass:[WMATweetHashtagEntity class]] && self.hashtagTapped != NULL)
 						{
-							self.hashtagTapped((WMATweetHashtagEntity *)entity, tapRecognizer.numberOfTouches);
+							self.hashtagTapped(self, (WMATweetHashtagEntity *)entity, tapRecognizer.numberOfTouches);
 						}
 						else if ([entity isKindOfClass:[WMATweetUserMentionEntity class]] && self.userMentionTapped != NULL)
 						{
-							self.userMentionTapped((WMATweetUserMentionEntity *)entity, tapRecognizer.numberOfTouches);
+							self.userMentionTapped(self, (WMATweetUserMentionEntity *)entity, tapRecognizer.numberOfTouches);
 						}
 						found = YES;
 						break;
@@ -407,7 +408,8 @@
 			}
 			if (found) break;
 		}
-        if (!found && self.textTapped != NULL) self.textTapped(self);
+        if (!found && self.textTapped != NULL &&
+            tapRecognizer.state == UIGestureRecognizerStateEnded) { self.textTapped(self); }
 		CFRelease(path);
 		CFRelease(frame);
 	}	
@@ -420,15 +422,31 @@
 - (void)setupDefaults
 {
 	self.backgroundColor = [UIColor whiteColor];
-	UITapGestureRecognizer *tapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(viewTapped:)];
+	WMARecognizer *tapRecognizer = [[WMARecognizer alloc]
+                                          initWithTarget:self action:@selector(viewTapped:)];
 	tapRecognizer.delegate = self;
+    tapRecognizer.minimumPressDuration = 0.01;
+    tapRecognizer.allowableMovement = 0.5;
 	[self addGestureRecognizer:tapRecognizer];
 	SAFE_ARC_RELEASE(tapRecognizer);
+    [[NSNotificationCenter defaultCenter]
+     addObserver:self selector:@selector(setDirty)
+     name:@"CancelWMATap" object:nil];
 }
 
 - (void)setDirty
 {
 	self.attributedString = nil;
+	if (_framesetter != NULL)
+	{
+		CFRelease(_framesetter);
+		_framesetter = NULL;
+	}
+	[self setNeedsDisplay];
+}
+
+- (void)redrawText
+{
 	if (_framesetter != NULL)
 	{
 		CFRelease(_framesetter);
@@ -546,9 +564,12 @@
 	return _attributedString;
 }
 
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer
+shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+    return YES;
+}
+
 @end
-
-
 
 #pragma mark -
 

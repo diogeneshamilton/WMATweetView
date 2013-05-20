@@ -81,6 +81,8 @@
 @interface WMATweetEntity : NSObject
 @property (nonatomic, readonly) NSUInteger start;
 @property (nonatomic, readonly) NSUInteger end;
+@property (nonatomic, assign) NSUInteger startWithOffset;
+@property (nonatomic, assign) NSUInteger endWithOffset;
 @end
 
 @interface WMATweetURLEntity : WMATweetEntity
@@ -114,11 +116,13 @@
 @end
 
 @interface WMATweetView : UIView
-typedef void (^URLEntityTappedCallbackBlock)(WMATweetURLEntity *entity, NSUInteger numberOfTouches);
-typedef void (^HashtagEntityTappedCallbackBlock)(WMATweetHashtagEntity *entity, NSUInteger numberOfTouches);
-typedef void (^UserMentionEntityTappedCallbackBlock)(WMATweetUserMentionEntity *entity, NSUInteger numberOfTouches);
-typedef void (^TextTapStartCallbackBlock)(WMATweetView *tweetView);
+typedef void (^EntityTappedCallbackBlock)(WMATweetView *tweetView, WMATweetEntity *entity, CGPoint point);
+typedef void (^URLEntityTappedCallbackBlock)(WMATweetView *tweetView, WMATweetURLEntity *entity, NSUInteger numberOfTouches);
+typedef void (^HashtagEntityTappedCallbackBlock)(WMATweetView *tweetView, WMATweetHashtagEntity *entity, NSUInteger numberOfTouches);
+typedef void (^UserMentionEntityTappedCallbackBlock)(WMATweetView *tweetView, WMATweetUserMentionEntity *entity, NSUInteger numberOfTouches);
 typedef void (^TextTappedCallbackBlock)(WMATweetView *tweetView);
+typedef void (^CancelTapCallbackBlock)(WMATweetView *tweetView);
+@property (nonatomic, SAFE_ARC_PROP_RETAIN) NSMutableAttributedString *attributedString;
 @property (nonatomic, SAFE_ARC_PROP_RETAIN) NSString *text;
 @property (nonatomic, SAFE_ARC_PROP_RETAIN) NSArray *entities;
 @property (nonatomic, SAFE_ARC_PROP_RETAIN) UIColor *textColor;
@@ -131,12 +135,15 @@ typedef void (^TextTappedCallbackBlock)(WMATweetView *tweetView);
 @property (nonatomic, SAFE_ARC_PROP_RETAIN) UIFont *userMentionFont;
 @property (nonatomic, SAFE_ARC_PROP_RETAIN) UITableViewController *tableViewController;
 @property (nonatomic, SAFE_ARC_PROP_RETAIN) UITableViewCell *cell;
+@property (nonatomic, copy) EntityTappedCallbackBlock entityTapped;
 @property (nonatomic, copy) URLEntityTappedCallbackBlock urlTapped;
 @property (nonatomic, copy) HashtagEntityTappedCallbackBlock hashtagTapped;
 @property (nonatomic, copy) UserMentionEntityTappedCallbackBlock userMentionTapped;
-@property (nonatomic, copy) TextTapStartCallbackBlock textTapStart;
 @property (nonatomic, copy) TextTappedCallbackBlock textTapped;
+@property (nonatomic, copy) CancelTapCallbackBlock cancelTap;
 - (id)initWithTweet:(NSDictionary *)tweet frame:(CGRect)frame;
 - (id)initWithText:(NSString *)text frame:(CGRect)frame;
 - (void)setDictionary:(NSDictionary *)tweet;
+- (void)setDirty;
+- (void)redrawText;
 @end
