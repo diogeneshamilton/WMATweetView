@@ -109,9 +109,9 @@
 - (id)initWithScreenName:(NSString *)screenName name:(NSString *)name idString:(NSString *)idString start:(NSUInteger)start end:(NSUInteger)end;
 @end
 
-@interface WMATweetAmpEntity : WMATweetEntity
+@interface WMATweetSymbolEntity : WMATweetEntity
 @property (nonatomic, readonly, SAFE_ARC_PROP_RETAIN) NSString *text;
-+ (WMATweetAmpEntity *)entityWithStart:(NSUInteger)start end:(NSUInteger)end;
++ (WMATweetSymbolEntity *)entityWithSymbol:(NSString *)symbol start:(NSUInteger)start end:(NSUInteger)end;
 - (id)initWithText:(NSString *)text start:(NSUInteger)start end:(NSUInteger)end;
 @end
 

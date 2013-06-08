@@ -154,25 +154,29 @@
     
     self.text = [tweet valueForKey:@"text"];
     
-    NSString *str = self.text;
-    NSString *searchString = @"&amp;";
-    NSMutableArray *amps = [NSMutableArray array];
-    NSRange searchRange = NSMakeRange(0, [str length]);
-    NSRange range;
-    
-    while ((range = [str rangeOfString:searchString options:0 range:searchRange]).location != NSNotFound) {
+    NSString *str = self.text;    
+    NSError *error = NULL;
+    NSRegularExpression *regex = [NSRegularExpression
+                                  regularExpressionWithPattern:@"&amp;|&lt;|&gt;"
+                                  options:NSRegularExpressionCaseInsensitive
+                                    error:&error];
+    NSMutableArray *symbols = [NSMutableArray array];
+
+    [regex enumerateMatchesInString:str options:0
+                              range:NSMakeRange(0, [str length])
+                         usingBlock:^(NSTextCheckingResult *match, NSMatchingFlags flags, BOOL *stop){
+                             if (match.resultType == NSTextCheckingTypeRegularExpression) {
+                                 NSNumber *start = [NSNumber numberWithInteger:match.range.location];
+                                 NSNumber *end = [NSNumber numberWithInteger:match.range.location+match.range.length];
+                                 NSArray *symbolIndices = [[NSArray alloc] initWithObjects: start, end, nil];
+                                 
+                                 NSDictionary *symbolEntity = [[NSDictionary alloc] initWithObjectsAndKeys:symbolIndices, @"indices", [str substringWithRange:match.range], @"text", nil];
+                                 
+                                 [symbols addObject:symbolEntity];
+                                 
+                             }
+    }];
         
-        NSNumber *start = [NSNumber numberWithInteger:range.location];
-        NSNumber *end = [NSNumber numberWithInteger:range.location+range.length];
-        NSArray *ampIndices = [[NSArray alloc] initWithObjects: start, end, nil];
-        
-        NSDictionary *ampEntity = [[NSDictionary alloc] initWithObjectsAndKeys:ampIndices, @"indices", nil];
-        
-        [amps addObject:ampEntity];
-        
-        searchRange = NSMakeRange(NSMaxRange(range), [str length] - NSMaxRange(range));
-    }
-    
     NSMutableArray *entities = [NSMutableArray array];
     
     for (NSDictionary *tweetEntity in [[tweet valueForKey:@"entities"] valueForKey:@"urls"])
@@ -191,9 +195,9 @@
     {
         [entities addObject:[WMATweetUserMentionEntity entityWithScreenName:[tweetEntity valueForKey:@"screen_name"] name:[tweetEntity valueForKey:@"name"] idString:[tweetEntity valueForKey:@"id_str"] start:[[[tweetEntity valueForKey:@"indices"] objectAtIndex:0] unsignedIntegerValue] end:[[[tweetEntity valueForKey:@"indices"] objectAtIndex:1] unsignedIntegerValue]]];
     }
-    for (NSDictionary *tweetEntity in amps)
+    for (NSDictionary *tweetEntity in symbols)
     {
-        [entities addObject:[WMATweetAmpEntity entityWithStart:[[[tweetEntity valueForKey:@"indices"] objectAtIndex:0] unsignedIntegerValue] end:[[[tweetEntity valueForKey:@"indices"] objectAtIndex:1] unsignedIntegerValue]]];
+        [entities addObject:[WMATweetSymbolEntity entityWithSymbol:[tweetEntity valueForKey:@"text"] start:[[[tweetEntity valueForKey:@"indices"] objectAtIndex:0] unsignedIntegerValue] end:[[[tweetEntity valueForKey:@"indices"] objectAtIndex:1] unsignedIntegerValue]]];
     }
     self.entities = entities;
 
@@ -494,13 +498,21 @@
 					rangeStartOffset += [urlEntity.displayURL length] - range.length;
 				}
 			}
-            else if ([entity isKindOfClass:[WMATweetAmpEntity class]])
+            else if ([entity isKindOfClass:[WMATweetSymbolEntity class]])
 			{
-				NSString *displayAmp = @"&";
-                [attributedString replaceCharactersInRange:range withString:displayAmp];
+				NSString *displaySymbol;
+                NSString *symbol = ((WMATweetSymbolEntity *)entity).text;
+                if ([symbol isEqualToString:@"&amp;"]) {
+                    displaySymbol = @"&";
+                } else if ([symbol isEqualToString:@"&lt;"]) {
+                    displaySymbol = @"<";
+                } else if ([symbol isEqualToString:@"&gt;"]) {
+                    displaySymbol = @">";
+                }
+                [attributedString replaceCharactersInRange:range withString:displaySymbol];
                 entity.startWithOffset = entity.start + rangeStartOffset;
-                entity.endWithOffset = entity.startWithOffset + [displayAmp length];
-                rangeStartOffset += [displayAmp length] - range.length;
+                entity.endWithOffset = entity.startWithOffset + [displaySymbol length];
+                rangeStartOffset += [displaySymbol length] - range.length;
 			}
 			else
 			{
@@ -551,7 +563,7 @@
 				entityColor = userMentionColor;
 				entityFont = _userMentionFontRef;
 			}
-            else if ([entity isKindOfClass:[WMATweetAmpEntity class]])
+            else if ([entity isKindOfClass:[WMATweetSymbolEntity class]])
 			{
 				entityColor = textColor;
 				entityFont = _textFontRef;
@@ -729,15 +741,15 @@ shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherG
 
 @end
 
-#pragma mark -
+#pragma mark - WMATweetSymbolEntity
 
-@implementation WMATweetAmpEntity
+@implementation WMATweetSymbolEntity
 
 @synthesize text = _text;
 
-+ (WMATweetAmpEntity *)entityWithStart:(NSUInteger)start end:(NSUInteger)end
++ (WMATweetSymbolEntity *)entityWithSymbol:(NSString *)symbol start:(NSUInteger)start end:(NSUInteger)end
 {
-	return SAFE_ARC_AUTORELEASE([[WMATweetAmpEntity alloc] initWithText:@"&amp;" start:start end:end]);
+	return SAFE_ARC_AUTORELEASE([[WMATweetSymbolEntity alloc] initWithText:symbol start:start end:end]);
 }
 
 - (id)initWithText:(NSString *)text start:(NSUInteger)start end:(NSUInteger)end
